@@ -57,8 +57,8 @@ public:
   std::string video_device_name_, io_method_name_, pixel_format_name_, camera_name_, camera_info_url_;
   //std::string start_service_name_, start_service_name_;
   bool streaming_status_;
-  int image_width_, image_height_, framerate_, exposure_, brightness_, contrast_, saturation_, sharpness_, focus_,
-      white_balance_, gain_;
+  int image_width_, image_height_, framerate_, exposure_, brightness_, contrast_, saturation_, sharpness_, gamma_, 
+      focus_, white_balance_, gain_;
   bool autofocus_, autoexposure_, auto_white_balance_;
   boost::shared_ptr<camera_info_manager::CameraInfoManager> cinfo_;
 
@@ -94,6 +94,7 @@ public:
     node_.param("contrast", contrast_, -1); //0-255, -1 "leave alone"
     node_.param("saturation", saturation_, -1); //0-255, -1 "leave alone"
     node_.param("sharpness", sharpness_, -1); //0-255, -1 "leave alone"
+    node_.param("gamma", gamma_, -1); //0-255, -1 "leave alone"
     // possible values: mmap, read, userptr
     node_.param("io_method", io_method_name_, std::string("mmap"));
     node_.param("image_width", image_width_, 640);
@@ -178,6 +179,11 @@ public:
     if (sharpness_ >= 0)
     {
       cam_.set_v4l_parameter("sharpness", sharpness_);
+    }
+
+    if (gamma_ >= 0)
+    {
+      cam_.set_v4l_parameter("gamma", gamma_);
     }
 
     if (gain_ >= 0)
