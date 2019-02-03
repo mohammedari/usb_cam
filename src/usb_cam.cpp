@@ -316,12 +316,16 @@ void uyvy2rgb(char *YUV, char *RGB, int NumPixels)
 
 static void mono102mono8(char *RAW, char *MONO, int NumPixels)
 {
-  int i, j;
-  for (i = 0, j = 0; i < (NumPixels << 1); i += 2, j += 1)
-  {
-    //first byte is low byte, second byte is high byte; smash together and convert to 8-bit
-    MONO[j] = (unsigned char)(((RAW[i + 0] >> 2) & 0x3F) | ((RAW[i + 1] << 6) & 0xC0));
-  }
+  //TODO FIXME
+  const int width        = 752;
+  const int height       = 480;
+  const int bytesperline = 1536; //758 pixel in 1 line?
+  for (int row = 0; row < height; ++row)
+    for (int col = 0; col < width; ++col)
+    {
+      MONO[(row * width + col) * 2]     = RAW[row * bytesperline / sizeof(char) + col * 2];
+      MONO[(row * width + col) * 2 + 1] = RAW[row * bytesperline / sizeof(char) + col * 2 + 1];
+    }
 }
 
 static void yuyv2rgb(char *YUV, char *RGB, int NumPixels)
@@ -538,6 +542,7 @@ int UsbCam::read_frame()
 
       assert(buf.index < n_buffers_);
       len = buf.bytesused;
+
       process_image(buffers_[buf.index].start, len, image_);
 
       if (-1 == xioctl(fd_, VIDIOC_QBUF, &buf))
@@ -922,36 +927,45 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
   fmt.fmt.pix.pixelformat = pixelformat_;
   fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
 
+  //TODO fix appropriately
+  fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_SRGGB10;
+
   if (-1 == xioctl(fd_, VIDIOC_S_FMT, &fmt))
     errno_exit("VIDIOC_S_FMT");
 
   /* Note VIDIOC_S_FMT may change width and height. */
 
   /* Buggy driver paranoia. */
-  min = fmt.fmt.pix.width * 2;
-  if (fmt.fmt.pix.bytesperline < min)
-    fmt.fmt.pix.bytesperline = min;
-  min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
-  if (fmt.fmt.pix.sizeimage < min)
-    fmt.fmt.pix.sizeimage = min;
+//  min = fmt.fmt.pix.width * 2;
+//  if (fmt.fmt.pix.bytesperline < min)
+//    fmt.fmt.pix.bytesperline = min;
+//  min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
+//  if (fmt.fmt.pix.sizeimage < min)
+//    fmt.fmt.pix.sizeimage = min;
 
   image_width = fmt.fmt.pix.width;
   image_height = fmt.fmt.pix.height;
 
-  struct v4l2_streamparm stream_params;
-  memset(&stream_params, 0, sizeof(stream_params));
-  stream_params.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if (xioctl(fd_, VIDIOC_G_PARM, &stream_params) < 0)
-    errno_exit("Couldn't query v4l fps!");
+  //TODO remove
+  ROS_INFO_STREAM("width        : " << fmt.fmt.pix.width);
+  ROS_INFO_STREAM("height       : " << fmt.fmt.pix.height);
+  ROS_INFO_STREAM("sizeimage    : " << fmt.fmt.pix.sizeimage);
+  ROS_INFO_STREAM("bytesperline : " << fmt.fmt.pix.bytesperline);
 
-  ROS_DEBUG("Capability flag: 0x%x", stream_params.parm.capture.capability);
-
-  stream_params.parm.capture.timeperframe.numerator = 1;
-  stream_params.parm.capture.timeperframe.denominator = framerate;
-  if (xioctl(fd_, VIDIOC_S_PARM, &stream_params) < 0)
-    ROS_WARN("Couldn't set camera framerate");
-  else
-    ROS_DEBUG("Set framerate to be %i", framerate);
+//  struct v4l2_streamparm stream_params;
+//  memset(&stream_params, 0, sizeof(stream_params));
+//  stream_params.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+//  if (xioctl(fd_, VIDIOC_G_PARM, &stream_params) < 0)
+//    errno_exit("Couldn't query v4l fps!");
+//
+//  ROS_DEBUG("Capability flag: 0x%x", stream_params.parm.capture.capability);
+//
+//  stream_params.parm.capture.timeperframe.numerator = 1;
+//  stream_params.parm.capture.timeperframe.denominator = framerate;
+//  if (xioctl(fd_, VIDIOC_S_PARM, &stream_params) < 0)
+//    ROS_WARN("Couldn't set camera framerate");
+//  else
+//    ROS_DEBUG("Set framerate to be %i", framerate);
 
   switch (io_)
   {
@@ -1088,8 +1102,11 @@ void UsbCam::grab_image(sensor_msgs::Image* msg)
   // fill the info
   if (monochrome_)
   {
-    fillImage(*msg, "mono8", image_->height, image_->width, image_->width,
+    //TODO rewrite for supporting both mono8 and mono10
+    fillImage(*msg, "mono16", image_->height, image_->width, 2 * image_->width,
         image_->image);
+    //fillImage(*msg, "mono16", image_->height, image_->width, 2 * image_->width,
+    //    image_->image);
   }
   else
   {

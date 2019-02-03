@@ -239,6 +239,9 @@ public:
     // publish the image
     image_pub_.publish(img_, *ci);
 
+    //TODO remove
+    //ROS_INFO("pub!");
+
     return true;
   }
 
