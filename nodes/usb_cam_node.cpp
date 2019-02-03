@@ -58,7 +58,7 @@ public:
   //std::string start_service_name_, start_service_name_;
   bool streaming_status_;
   int image_width_, image_height_, framerate_, exposure_, brightness_, contrast_, saturation_, sharpness_, focus_,
-      white_balance_, gain_, coarse_time_, coarse_time_short_;
+      white_balance_, gain_, coarse_time_, coarse_time_short_, hdr_enable_, height_align_, size_align_;
   bool autofocus_, autoexposure_, auto_white_balance_;
   boost::shared_ptr<camera_info_manager::CameraInfoManager> cinfo_;
 
@@ -108,8 +108,11 @@ public:
     node_.param("autoexposure", autoexposure_, true);
     node_.param("exposure", exposure_, 100);
     node_.param("gain", gain_, -1); //0-100?, -1 "leave alone"
-    node_.param("coarse_time", coarse_time_, -1); //1-5318, -1 "leave alone"
+    node_.param("coarse_time", coarse_time_, -1);             //1-5318, -1 "leave alone"
     node_.param("coarse_time_short", coarse_time_short_, -1); //1-5318, -1 "leave alone"
+    node_.param("hdr_enable", hdr_enable_, -1);               //0-1, -1 "leave alone"
+    node_.param("height_align", height_align_, -1);           //1-16, -1 "leave alone"
+    node_.param("size_align", size_align_, -1);               //1-16, -1 "leave alone"
     // enable/disable auto white balance temperature
     node_.param("auto_white_balance", auto_white_balance_, true);
     node_.param("white_balance", white_balance_, 4000);
@@ -197,6 +200,22 @@ public:
       cam_.set_v4l_parameter("coarse_time_short", coarse_time_short_);
     }
 
+    if (hdr_enable_ >= 0)
+    {
+      cam_.set_v4l_parameter("hdr_enable", hdr_enable_);
+    }
+
+    if (height_align_ >= 0)
+    {
+      cam_.set_v4l_parameter("height_align", height_align_);
+    }
+
+    if (size_align_ >= 0)
+    {
+      cam_.set_v4l_parameter("size_align", size_align_);
+    }
+
+    /*
     // check auto white balance
     if (auto_white_balance_)
     {
@@ -231,6 +250,7 @@ public:
         cam_.set_v4l_parameter("focus_absolute", focus_);
       }
     }
+    */
   }
 
   virtual ~UsbCamNode()

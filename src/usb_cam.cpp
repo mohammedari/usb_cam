@@ -320,11 +320,22 @@ static void mono102mono8(char *RAW, char *MONO, int NumPixels)
   const int width        = 752;
   const int height       = 480;
   const int bytesperline = 1536; //758 pixel in 1 line?
+  
+  //copy 10bit data
+//  for (int row = 0; row < height; ++row)
+//    for (int col = 0; col < width; ++col)
+//    {
+//      MONO[(row * width + col) * 2]     = RAW[row * bytesperline / sizeof(char) + col * 2];
+//      MONO[(row * width + col) * 2 + 1] = RAW[row * bytesperline / sizeof(char) + col * 2 + 1];
+//    }
+
+  //squash 10bit to 8bit data
   for (int row = 0; row < height; ++row)
     for (int col = 0; col < width; ++col)
     {
-      MONO[(row * width + col) * 2]     = RAW[row * bytesperline / sizeof(char) + col * 2];
-      MONO[(row * width + col) * 2 + 1] = RAW[row * bytesperline / sizeof(char) + col * 2 + 1];
+      unsigned char low  = RAW[row * bytesperline / sizeof(char) + col * 2];
+      unsigned char high = RAW[row * bytesperline / sizeof(char) + col * 2 + 1];
+      MONO[row * width + col] = (low >> 6) | (high << 2);
     }
 }
 
@@ -1103,7 +1114,7 @@ void UsbCam::grab_image(sensor_msgs::Image* msg)
   if (monochrome_)
   {
     //TODO rewrite for supporting both mono8 and mono10
-    fillImage(*msg, "mono16", image_->height, image_->width, 2 * image_->width,
+    fillImage(*msg, "mono8", image_->height, image_->width, image_->width,
         image_->image);
     //fillImage(*msg, "mono16", image_->height, image_->width, 2 * image_->width,
     //    image_->image);
